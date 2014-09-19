@@ -5,6 +5,22 @@ Ansible module for operating on etcd keys
 
 **TODO:** add tests
 
+## Deps
+
+This module depends on the `python-etcd` and `requests` packages being
+installed.  They must be installed locally, since the tasks in question
+are delegated to localhost.
+
+Be sure to add them to your `requirements.txt`:
+
+```text
+# requirements.txt
+requests >= 2.4
+python-etcd >= 0.3.2
+```
+
+## Example
+
 Example playbook usage:
 
 ```yaml
