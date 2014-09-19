@@ -1,0 +1,134 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from ansible.module_utils.basic import *
+
+# Adapted from https://github.com/devo-ps/ansible-addons
+
+try:
+    import etcd
+    etcd_found = True
+except ImportError:
+    etcd_found = False
+
+try:
+    import requests
+    requests_found = True
+except ImportError:
+    requests_found = False
+
+
+def main():
+    stack = []
+
+    module = AnsibleModule(
+        argument_spec=dict(
+            state=dict(required=True,
+                       choices=['present', 'absent', 'retrieved']),
+            host=dict(required=False, default='127.0.0.1'),
+            port=dict(default=4001),
+            allow_redirects=dict(required=False, default=True),
+            key=dict(required=True),
+            value=dict(required=False, default=None),
+            ssl_cert=dict(required=False, default=None),
+            ssl_key=dict(required=False, default=None),
+            )
+    )
+
+    if not etcd_found:
+        module.fail_json(msg="the python etcd module is required")
+
+    if not requests_found:
+        module.fail_json(msg="the python requests module is required")
+
+    state = module.params['state']
+    target_host = module.params['host']
+    target_port = int(module.params['port'])
+
+    key = module.params['key']
+    value = module.params['value']
+    ssl_cert = module.params['ssl_cert']
+    ssl_key = module.params['ssl_key']
+
+    if state == 'present' and not value:
+        module.fail_json(msg='Value is required with state="present".')
+
+    kwargs = {
+        'host': target_host,
+        'port': target_port,
+        'allow_redirect': module.params['allow_redirects']
+    }
+
+    if ssl_cert:
+        kwargs['ssl_cert'] = ssl_cert
+    if ssl_key:
+        kwargs['ssl_key'] = ssl_key
+
+    client = etcd.Client(**kwargs)
+
+    change = False
+    prev_value = None
+
+    # attempt to get key
+    try:
+        prev_value = client.get(key).value
+    except requests.ConnectionError:
+        module.fail_json(msg="Can not connect to target.")
+    except KeyError:
+        prev_value = None
+    except etcd.EtcdException as err:
+        module.fail_json(msg="Etcd error: %s" % err)
+
+    if state == 'retrieved':
+        if prev_value is not None:
+            change = True
+            value = prev_value
+    elif state == 'present':
+        stack = []
+        dirname = os.path.dirname(key)
+
+        while True:
+            if dirname == "/":
+                break
+            else:
+                stack.append(dirname)
+            dirname = os.path.dirname(dirname)
+
+        # ensure parent directories exist (like mkdir -p)
+        while stack:
+            d = stack.pop()
+            try:
+                client.get(d).value
+            except requests.ConnectionError:
+                module.fail_json(msg="Can not connect to target.")
+            except KeyError:
+                client.write(d, '', dir=True)
+                prev_value = None
+            except etcd.EtcdException as err:
+                module.fail_json(msg="Etcd error: %s" % err)
+
+        try:
+            set_res = client.write(key, value)
+            if set_res.newKey or prev_value != value:
+                change = True
+        except requests.ConnectionError:
+            module.fail_json(msg="Can not connect to target.")
+    elif state == 'absent':
+        if prev_value is not None:
+            change = True
+            try:
+                set_res = client.delete(key)
+            except requests.ConnectionError:
+                module.fail_json(msg="Can not connect to target.")
+
+    results = {
+        'changed': change,
+        'value': value,
+        'key': key
+    }
+
+    if prev_value != value:
+        results['prev_value'] = prev_value
+
+    module.exit_json(**results)
+
+main()
