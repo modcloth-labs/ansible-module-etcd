@@ -37,16 +37,4 @@ Example playbook usage:
       delegate_to: localhost
       connection: local
       sudo: false
-
-    - name: get value from etcd
-      etcd:
-        state: retrieved
-        host: my-etcd-host.example.com
-        port: 4001
-        key: /asdf/foo/bar/baz/gorp
-      register: foo
-      delegate_to: localhost
-      connection: local
-      sudo: false
-      register: result # use result.value
 ```

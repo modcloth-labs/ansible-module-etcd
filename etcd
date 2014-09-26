@@ -23,7 +23,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             state=dict(required=True,
-                       choices=['present', 'absent', 'retrieved']),
+                       choices=['present', 'absent']),
             host=dict(required=False, default='127.0.0.1'),
             port=dict(default=4001),
             allow_redirects=dict(required=False, default=True),
@@ -78,11 +78,7 @@ def main():
     except etcd.EtcdException as err:
         module.fail_json(msg="Etcd error: %s" % err)
 
-    if state == 'retrieved':
-        if prev_value is not None:
-            change = True
-            value = prev_value
-    elif state == 'present':
+    if state == 'present':
         stack = []
         dirname = os.path.dirname(key)
 
