@@ -27,8 +27,6 @@ def main():
             host=dict(required=False, default='127.0.0.1'),
             key=dict(required=True),
             port=dict(default=4001),
-            ssl_cert=dict(required=False, default=None),
-            ssl_key=dict(required=False, default=None),
             value=dict(required=False, default=None),
         ),
         supports_check_mode=True
@@ -46,8 +44,6 @@ def main():
 
     key = module.params['key']
     value = module.params['value']
-    ssl_cert = module.params['ssl_cert']
-    ssl_key = module.params['ssl_key']
 
     if state == 'present' and not value:
         module.fail_json(msg='Value is required with state="present".')
@@ -57,11 +53,6 @@ def main():
         'port': target_port,
         'allow_redirect': module.params['allow_redirect']
     }
-
-    if ssl_cert:
-        kwargs['ssl_cert'] = ssl_cert
-    if ssl_key:
-        kwargs['ssl_key'] = ssl_key
 
     client = etcd.Client(**kwargs)
 
