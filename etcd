@@ -22,16 +22,16 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            state=dict(required=True,
-                       choices=['present', 'absent']),
+            state=dict(required=True, choices=['present', 'absent']),
+            allow_redirect=dict(required=False, default=True),
             host=dict(required=False, default='127.0.0.1'),
-            port=dict(default=4001),
-            allow_redirects=dict(required=False, default=True),
             key=dict(required=True),
-            value=dict(required=False, default=None),
+            port=dict(default=4001),
             ssl_cert=dict(required=False, default=None),
             ssl_key=dict(required=False, default=None),
-            )
+            value=dict(required=False, default=None),
+        ),
+        supports_check_mode=True
     )
 
     if not etcd_found:
@@ -55,7 +55,7 @@ def main():
     kwargs = {
         'host': target_host,
         'port': target_port,
-        'allow_redirect': module.params['allow_redirects']
+        'allow_redirect': module.params['allow_redirect']
     }
 
     if ssl_cert:
@@ -77,6 +77,13 @@ def main():
         prev_value = None
     except etcd.EtcdException as err:
         module.fail_json(msg="Etcd error: %s" % err)
+
+    # handle check mode
+    if module.check_mode:
+        if ((state == 'absent' and prev_value is not None) or
+                (state == 'present' and prev_value != value)):
+                    change = True
+        module.exit_json(changed=change)
 
     if state == 'present':
         stack = []
