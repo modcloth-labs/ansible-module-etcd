@@ -58,18 +58,18 @@ options:
 EXAMPLES = """
 # set a value in etcd
 - etcd:
-    state: present
-    host: my-etcd-host.example.com
-    port: 4001
-    key: /asdf/foo/bar/baz/gorp
-    value: my-foo-bar-baz-gor-server.prod.example.com
+    state=present
+    host=my-etcd-host.example.com
+    port=4001
+    key=/asdf/foo/bar/baz/gorp
+    value=my-foo-bar-baz-gor-server.prod.example.com
 
 # delete a value from etcd
 - etcd:
-    state: absent
-    host: my-etcd-host.example.com
-    port: 4001
-    key: /asdf/foo/bar/baz/gorp
+    state=absent
+    host=my-etcd-host.example.com
+    port=4001
+    key=/asdf/foo/bar/baz/gorp
 
 # NOTE: you may wish to use `connection: local` with these tasks
 """
