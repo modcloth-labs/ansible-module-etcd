@@ -86,7 +86,6 @@ try:
 except ImportError:
     requests_found = False
 
-
 def main():
     stack = []
 
@@ -134,7 +133,7 @@ def main():
         prev_value = client.get(key).value
     except requests.ConnectionError:
         module.fail_json(msg="Can not connect to target.")
-    except KeyError:
+    except (KeyError, etcd.EtcdKeyNotFound):
         prev_value = None
     except etcd.EtcdException as err:
         module.fail_json(msg="Etcd error: %s" % err)
@@ -164,7 +163,7 @@ def main():
                 client.get(d).value
             except requests.ConnectionError:
                 module.fail_json(msg="Can not connect to target.")
-            except KeyError:
+            except (KeyError, etcd.EtcdKeyNotFound):
                 client.write(d, '', dir=True)
                 prev_value = None
             except etcd.EtcdException as err:
